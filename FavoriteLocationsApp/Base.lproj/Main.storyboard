@@ -59,6 +59,7 @@
                         </barButtonItem>
                     </navigationItem>
                     <connections>
+                        <outlet property="searchBar" destination="OaB-NP-L33" id="VTM-p9-1uR"/>
                         <outlet property="tableView" destination="X0e-T1-UUm" id="rjp-zO-RXh"/>
                         <segue destination="EVd-P6-zLh" kind="show" identifier="toLocationData" id="GLE-ab-faj"/>
                     </connections>

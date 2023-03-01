@@ -6,22 +6,37 @@ class LocationList: UIViewController {
     var locationNames = [String]()
     var locationIDs = [String]()
     @IBOutlet var tableView: UITableView!
+    @IBOutlet var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = self
+        searchBar.delegate = self
+        
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(closeKeyboard))
+        gestureRecognizer.cancelsTouchesInView = false
+        view.addGestureRecognizer(gestureRecognizer)
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        fetchData()
+        fetchData(word: "")
         tableView.reloadData()
     }
     
-    func fetchData(){
+    @objc func closeKeyboard(){
+        view.endEditing(true)
+    }
+    
+    func fetchData(word: String){
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         let context = appDelegate.persistentContainer.viewContext
         let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Locations")
+        if word != "" {
+            request.predicate = NSPredicate(format: "name CONTAINS %@", word)
+        }
+        let sort = NSSortDescriptor(key: #keyPath(Locations.name), ascending: true)
+        request.sortDescriptors = [sort]
         request.returnsObjectsAsFaults = false
         do {
             let result = try context.fetch(request)
@@ -93,5 +108,17 @@ extension LocationList: UITableViewDelegate, UITableViewDataSource {
         }
         let swipeAction = UISwipeActionsConfiguration(actions: [delete])
         return swipeAction
+    }
+}
+
+extension LocationList: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText != "" {
+            fetchData(word: searchText)
+            tableView.reloadData()
+        } else {
+            fetchData(word: "")
+            tableView.reloadData()
+        }
     }
 }

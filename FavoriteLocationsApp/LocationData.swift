@@ -3,6 +3,7 @@ import MapKit
 import CoreData
 import CoreLocation
 
+//açılışta haritada gözüken yer anlık konum olsun. değişince işlem yapılmasın
 class LocationData: UIViewController {
     var incomingLocationID: String?
     var locationLatitude: Double?
@@ -14,10 +15,22 @@ class LocationData: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        mapView.delegate = self
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(closeKeyboard))
+        view.addGestureRecognizer(gestureRecognizer)
+        locationNameTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+    }
+    
+    @objc func textFieldDidChange(_ textField: UITextField) {
+        if textField.text == "" {
+            navigationItem.rightBarButtonItem?.isEnabled = false
+        } else {
+            navigationItem.rightBarButtonItem?.isEnabled = true
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -27,8 +40,14 @@ class LocationData: UIViewController {
             let gestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(chooseLocation(gestureRecognizer: )))
             gestureRecognizer.minimumPressDuration = 2
             mapView.addGestureRecognizer(gestureRecognizer)
+            locationManager.stopUpdatingLocation()
             navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(saveLocation))
+            navigationItem.rightBarButtonItem?.isEnabled = false
         }
+    }
+    
+    @objc func closeKeyboard(){
+        view.endEditing(true)
     }
     
     func fetchData(){
@@ -82,8 +101,7 @@ class LocationData: UIViewController {
                 annotation.subtitle = note
             }
             mapView.addAnnotation(annotation)
-            mapView.showsUserLocation = false
-            locationManager.stopUpdatingLocation()
+//            mapView.showsUserLocation = false
         }
     }
     
@@ -103,6 +121,7 @@ class LocationData: UIViewController {
         appDelegate.saveContext()
         navigationController?.popViewController(animated: true)
     }
+    
 }
 
 extension LocationData: CLLocationManagerDelegate {
@@ -115,4 +134,30 @@ extension LocationData: CLLocationManagerDelegate {
             mapView.setRegion(region, animated: true)
         }
     }
+    
 }
+
+extension LocationData: MKMapViewDelegate {
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        if annotation is MKUserLocation {
+            return nil
+        }
+        let annotationID = "annotation"
+        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: annotationID)
+        if pinView == nil {
+            pinView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: annotationID)
+            pinView?.canShowCallout = true
+            pinView?.tintColor = .red
+            let button = UIButton(type: .detailDisclosure)
+            pinView?.rightCalloutAccessoryView = button
+        } else {
+            pinView?.annotation = annotation
+        }
+        return pinView
+    }
+    func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
+
+    }
+}
+
+
